@@ -116,6 +116,13 @@ def create_audio_path_dict() -> Dict[str, str]:
         audio_path_dict[mt.track_id] = mt.mix_path
     return audio_path_dict
 
+def create_audio_path_dict_from_dir(audio_dir:str) -> Dict[str, str]:
+    audio_path_dict = {}
+    audio_paths = list_all_file_paths_in_dir(audio_dir, exts=('mp3', 'wav'))
+    for audio_path in audio_paths:
+        audio_name = get_file_name(audio_path, include_ext=False)
+        audio_path_dict[audio_name] = audio_path
+    return audio_path_dict
 
 def create_label_path_dict(label_dir: str) -> Dict[str, str]:
     """Return a dictionary contain the song_name: label_path
@@ -145,6 +152,25 @@ def create_dataset_path_dict(label_dir: str) -> Dict[str, Tuple[str, str]]:
     """
     dataset_paths = {}
     audio_path_dict = create_audio_path_dict()
+    label_path_dict = create_label_path_dict(label_dir)
+
+    for label_name in label_path_dict.keys():
+        audio_path = audio_path_dict[label_name]
+        label_path = label_path_dict[label_name]
+        dataset_paths[label_name] = (label_path, audio_path)
+    return dataset_paths
+
+def create_dataset_path_dict_ext(label_dir: str, audio_dir:str) -> Dict[str, Tuple[str, str]]:
+    """Return a dictionary contain the {song_name: (label_path, audio_mix_path)}
+
+    Args:
+        label_folder (str): the path to the label directory.
+
+    Returns:
+        Dict[str,str]: {song_name: label_path, audio_mix_path}
+    """
+    dataset_paths = {}
+    audio_path_dict = create_audio_path_dict_from_dir(audio_dir)
     label_path_dict = create_label_path_dict(label_dir)
 
     for label_name in label_path_dict.keys():

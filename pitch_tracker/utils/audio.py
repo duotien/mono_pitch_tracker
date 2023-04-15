@@ -59,8 +59,11 @@ def load_audio_with_torch(file_path, sample_rate, keep_channel_dim=True):
         signal = resample(signal, sr, sample_rate)
         sr = sample_rate
     # downmix
-    if signal.shape[1] > 1:
+    if signal.shape[1] == 1:
+        signal = signal.squeeze(-1)
+    else:
         signal = remix_torch(signal, 1)
+
     if keep_channel_dim:
         signal = torch.unsqueeze(signal, 0)
     return signal, sr

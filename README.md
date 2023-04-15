@@ -1,7 +1,13 @@
-# mono_pitch_tracker | <a href="https://colab.research.google.com/github/duotien/mono_pitch_tracker/blob/main/notebooks/mono_pitch_tracker.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" height=30/></a>
+# Mono Pitch Tracker | <a href="https://colab.research.google.com/github/duotien/mono_pitch_tracker/blob/main/notebooks/mono_pitch_tracker.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" height=30/></a>
 
 A data driven Mono Pitch Tracker using Pytorch.
 
+# Motivation
+
+This project is a companion code for our undergraduate thesis. The aim of this project is to:
+- Research and apply our knowledge to solve a Melody Extraction problem using ML techniques and algorithms.
+- Apply our ML model to create a basic monophonic pitch tracker.
+- Learn something new.
 
 # Setup
 We recommend using anaconda/mini-conda to setup the project.
@@ -22,18 +28,19 @@ conda activate mpt_2022
 
 3. Use conda-develop to install the package to the environment (this help importing custom modules)
 
-Note: you must still be in the mono_pitch_tracker
+Note: you must still be in the mono_pitch_tracker directory:
+
 ```
 conda develop .
 ```
 
-4. Do the same thing for medleydb
+4. Do the same thing for medleydb:
 ```
 cd medleydb
 conda develop .
 ```
 
-5. Follow this guide to install `pytorch`: https://pytorch.org/get-started/locally/
+5. Follow this guide to install `pytorch` according to your device: https://pytorch.org/get-started/locally/
 
 # Usage
 An example usage for this project is making a simple monophonic Auto Music Transcriptor. We provide a script to let user extract the melody from an audio input and convert it into midi using `mido`.
@@ -43,7 +50,7 @@ python audio2midi.py audio.mp3 -o melody.mid
 ```
 
 # Reproduce
-If you would like to reproduce this experiment, start with the jupyter notebooks.
+If you would like to reproduce this experiment, start with the jupyter notebooks in `notebooks/`.
 
 ## Dataset
 Below are the datasets used in this experiment:
