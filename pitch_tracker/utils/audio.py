@@ -8,7 +8,7 @@ https://github.com/CPJKU/madmom/blob/main/madmom/audio/signal.py#L169
 
 """
 
-from typing import Tuple
+from typing import Tuple, Union
 
 import torchaudio
 import torch
@@ -16,16 +16,17 @@ import librosa
 import numpy as np
 
 
-def load_audio_mono(file_path: str, sample_rate: int, keep_channel_dim: bool = True) -> Tuple[np.ndarray, int]:
+def load_audio_mono(file_path: str, sample_rate: int, keep_channel_dim: bool = True, as_torch_tensor: bool = False) -> Tuple[Union[np.ndarray, torch.Tensor], int]:
     """Loads an audio file and returns a mono audio signal.
 
     Args:
         file_path (str): Path to the audio file.
         sample_rate (int): The sample rate to load the audio file with.
         keep_channel_dim (bool, optional): Whether to keep the channel dimension of the audio signal. Defaults to True.
+        as_torch_tensor (bool, optional): return the signal as `torch.Tensor` datatype if True, else return as `np.ndarray`. Defaults to False.
 
     Returns:
-        Tuple[np.ndarray, int]: A tuple containing the audio signal and sample rate.
+        Tuple[np.ndarray | torch.Tensor, int]: A tuple containing the audio signal and sample rate.
     """
 
     try:
@@ -37,6 +38,9 @@ def load_audio_mono(file_path: str, sample_rate: int, keep_channel_dim: bool = T
         signal, sr = librosa.load(file_path, sr=sample_rate, mono=True)
         if keep_channel_dim:
             signal = np.expand_dims(signal, -1)
+        
+    if as_torch_tensor:
+        signal = torch.as_tensor(signal, dtype=torch.float32)
 
     return signal, sr
 

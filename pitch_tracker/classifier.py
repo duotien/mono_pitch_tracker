@@ -116,9 +116,11 @@ class MelodyExtractor():
             n_mels = self.n_mels,
             sample_rate = sample_rate,
             fmin = self.fmin,
+            log_compress=True,
             backend = 'librosa',
         )
 
+        # patch_step = patch_size so we don't make overlapping frame
         pick_features, pick_times = build_pick_features_and_time(
             STFT_features = melspectrogram_features.T,
             patch_step = self.patch_size,

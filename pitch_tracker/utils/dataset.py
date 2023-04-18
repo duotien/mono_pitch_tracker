@@ -264,7 +264,7 @@ def extract_stft_feature(
 
 
 def extract_melspectrogram_feature(
-        y: np.ndarray,
+        y: Union[np.ndarray, torch.Tensor],
         n_fft: int,
         hop_length: int,
         n_mels: int,
@@ -273,7 +273,8 @@ def extract_melspectrogram_feature(
         fmin: float = F_MIN,
         mean: float = 0.0,
         var: float = 1.0,
-        backend: str = 'torch') -> Union[np.ndarray, torch.Tensor]:
+        log_compress: bool = True,
+        backend: str = 'librosa',) -> Union[np.ndarray, torch.Tensor]:
     """extract the melspectrogram feature from the audio signal.
 
     Args:
@@ -292,6 +293,7 @@ def extract_melspectrogram_feature(
         np.ndarray | torch.Tensor: the melspectrogram feature, shape: [n_channels, n_mels, n_frames] 
     """
     if backend == 'torch':
+        y = torch.as_tensor(y, dtype=torch.float32)
         melspectrogram_extractor = MelSpectrogram(
             sample_rate=sample_rate,
             hop_length=hop_length,
@@ -303,11 +305,17 @@ def extract_melspectrogram_feature(
             f_max=None,
             n_mels=n_mels,
             power=2.0,
-            norm="slaney",
+            norm='slaney',
+            mel_scale='slaney'
         )
+
         melspectrogram_feature = melspectrogram_extractor(y)
-        log_compress = amplitude_to_DB(
-            melspectrogram_feature, multiplier=10., amin=1e-10, db_multiplier=1.0)
+        if log_compress:
+            melspectrogram_feature = amplitude_to_DB(
+                melspectrogram_feature,
+                multiplier=10.,
+                amin=1e-10,
+                db_multiplier=1.0)
 
     else:
         melspectrogram_feature = librosa.feature.melspectrogram(
@@ -322,10 +330,12 @@ def extract_melspectrogram_feature(
             fmax=None,
             n_mels=n_mels,
             power=2.0,
-            htk=True
+            htk=False, # use 'slaney' formular
+            norm='slaney'
         )
-        log_compress = librosa.power_to_db(melspectrogram_feature)
-    return (log_compress - mean) / var
+        if log_compress:
+            melspectrogram_feature = librosa.power_to_db(melspectrogram_feature)
+    return (melspectrogram_feature - mean) / var
 
 
 def read_label_file(label_path: str):
@@ -384,8 +394,9 @@ def create_feature_label_generator(
             n_fft=n_fft,
             hop_length=hop_length,
             n_mels=n_mels,
+            fmin=fmin,
+            log_compress=True,
             backend='librosa',
-            fmin=fmin
         )
 
         pick_features, pick_times = build_pick_features_and_time(
