@@ -6,8 +6,8 @@ import mido
 import numpy as np
 import torch
 
-from pitch_tracker import THESIS_2023_MODEL_PATH
-from pitch_tracker.ml.net import MPT2023
+from pitch_tracker import THESIS_2023_MODEL_3_PATH
+from pitch_tracker.ml.net import MPT2023_3
 from pitch_tracker.utils.audio import load_audio_mono
 from pitch_tracker.utils.constants import (ANALYSIS_FRAME_SIZE,
                                            ANALYSIS_FRAME_TIME, F_MIN,
@@ -22,7 +22,7 @@ from pitch_tracker.utils.midi import build_note_messages, convert_to_midi
 class MelodyExtractor():
     def __init__(
             self,
-            model_path=THESIS_2023_MODEL_PATH,
+            model_path=THESIS_2023_MODEL_3_PATH,
             n_fft: int = N_FFT,
             n_mels: int = N_MELS*2,
             hop_length: int = HOP_LENGTH,
@@ -42,7 +42,7 @@ class MelodyExtractor():
         self.fmin = fmin
         self.device = device
 
-        self.model = MPT2023().to(device)
+        self.model = MPT2023_3().to(device)
         self.model.load_state_dict(torch.load(model_path, map_location=device))
 
     def __call__(
@@ -92,7 +92,10 @@ class MelodyExtractor():
 
         for audio_path in src:
             out_midi_path = os.path.join(dst_dir, os.path.splitext(os.path.basename(audio_path))[0] + '.mid')
-            self.export_to_midi(audio_path, out_midi_path, tick_per_beat, voicing_bias)
+            try:
+                self.export_to_midi(audio_path, out_midi_path, tick_per_beat, voicing_bias)
+            except Exception as e:
+                print(f'Cannot convert {audio_path} - {e}')
 
     def get_pick_features_and_time(
             self,
@@ -140,29 +143,46 @@ class MelodyExtractor():
         split_indices = split_indices.tolist()
         pitch_pred_indices_mask = torch.arange(pitch_pred.shape[0])
 
-        sections = torch.hsplit(pitch_pred_indices_mask, split_indices)
-        sections_pitch_values = pitch_pred[[
-            indices[0] for indices in sections]].tolist()
-        sections_pitch_values = tuple(sections_pitch_values)
+        sequences = torch.hsplit(pitch_pred_indices_mask, split_indices)
+        sequences_pitch_values = pitch_pred[[
+            indices[0] for indices in sequences]].tolist()
+        sequences_pitch_values = tuple(sequences_pitch_values)
 
-        return list(zip(sections, sections_pitch_values))
+        return list(zip(sequences, sequences_pitch_values))
+    
+    def get_first_last_indices_pairs_of_consecutive_pitch_pred(self, pitch_pred: torch.Tensor):
+        split_indices = torch.where(torch.diff(pitch_pred) != 0)[0]+1
+        split_indices = split_indices.tolist()
+        pitch_pred_indices_mask = torch.arange(pitch_pred.size(dim=0))
+
+        sequences = torch.hsplit(pitch_pred_indices_mask, split_indices)
+
+        first_last_indices_pairs = []
+        for sequence in sequences:
+            first_idx = sequence[0].item()
+            last_idx = sequence[-1].item()
+            first_last_indices_pairs.append((first_idx, last_idx))
+
+        sequences_pitch_values = pitch_pred[[first_idx for first_idx, _ in first_last_indices_pairs]].tolist()
+        sequences_pitch_values = tuple(sequences_pitch_values)
+
+        return list(zip(first_last_indices_pairs, sequences_pitch_values))
+
 
     def build_note_sequences(self, pitch_pred: torch.Tensor, analysis_frame_time: int, analysis_frame_powers=None):
         note_sequences = []
-        pitch_sequences = self.get_consecutive_pred(pitch_pred)
+        pitch_sequences = self.get_first_last_indices_pairs_of_consecutive_pitch_pred(pitch_pred)
         
         #TODO: Add a way to get power value for each frame
         if analysis_frame_powers is None:
             analysis_frame_powers = 50
         
         # filter non-melody sequences
-        pitch_sequences = [(sequence, midi_value) for sequence,
+        pitch_sequences = [(first_last_pairs, midi_value) for first_last_pairs,
                            midi_value in pitch_sequences if midi_value != 0]
-        for sequence, midi_value in pitch_sequences:
-            sequence += 1
-            start_time = (sequence[0] * analysis_frame_time).item()
-            end_time = (
-                sequence[-1] * analysis_frame_time).item() + analysis_frame_time
+        for (first_idx, last_idx), midi_value in pitch_sequences:
+            start_time = first_idx * analysis_frame_time
+            end_time = (last_idx + 1) * analysis_frame_time
             note_sequences.append(
                 (start_time, end_time, midi_value, analysis_frame_powers))
 

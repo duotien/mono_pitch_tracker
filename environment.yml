@@ -16,3 +16,4 @@ dependencies:
   - pip:
     - librosa==0.9.2
     - sox>=1.2.3
+    - mir_eval

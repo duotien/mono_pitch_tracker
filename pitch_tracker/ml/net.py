@@ -82,12 +82,12 @@ class Audio_CRNN_512_5(nn.Module):
 
         return x
 
-class MPT2023(nn.Module):
+class MPT2023_1(nn.Module):
     def __init__(self):
         """
         class_weights: Weight tensor for each class size: (n_classes)
         """
-        super(MPT2023, self).__init__()
+        super(MPT2023_1, self).__init__()
         self.conv2d_block1 = create_conv2d_block(
             conv2d_input=(1,128,(1,5)),
             padding='same',
@@ -106,12 +106,6 @@ class MPT2023(nn.Module):
             maxpool_kernel_size=(1,5),
         )
         
-        # self.conv2d_block4 = create_conv2d_block(
-        #     conv2d_input=(64,64,3),
-        #     padding='same',
-        #     maxpool_kernel_size=(1,5),
-        # )
-
         self.flatten_layer = nn.Flatten(start_dim=2)
 
         self.gru_bidirectional_1 = nn.GRU(
@@ -138,7 +132,6 @@ class MPT2023(nn.Module):
         x = self.conv2d_block1(x)
         x = self.conv2d_block2(x)
         x = self.conv2d_block3(x)
-        # x = self.conv2d_block4(x)
         x = x.permute((0,2,3,1)) # [batch, channel, n_frames, n_mel] -> [batch, n_frames, n_mel * channel]
         x = self.flatten_layer(x)
         x, h_n = self.gru_bidirectional_1(x)
@@ -148,7 +141,137 @@ class MPT2023(nn.Module):
         x = x.permute(0,2,1)
         x = self.output_layer(x)
         return x
+
+class MPT2023_2(nn.Module):
+    def __init__(self):
+        """
+        class_weights: Weight tensor for each class size: (n_classes)
+        """
+        super(MPT2023_2, self).__init__()
+        self.conv2d_block1 = create_conv2d_block(
+            conv2d_input=(1,64,(1,5)),
+            padding='same',
+            maxpool_kernel_size=None,
+        )
         
+        self.conv2d_block2 = create_conv2d_block(
+            conv2d_input=(64,64,(3,5)),
+            padding='same',
+            maxpool_kernel_size=(1,5),
+        )
+
+        self.conv2d_block3 = create_conv2d_block(
+            conv2d_input=(64,64,3),
+            padding='same',
+            maxpool_kernel_size=(1,5),
+        )
+
+        self.flatten_layer = nn.Flatten(start_dim=2)
+
+        self.gru1 = nn.GRU(
+            input_size=448,
+            hidden_size=64,
+            batch_first=True,
+            bidirectional=False,
+            dropout=0.2,
+        )
+
+        self.gru_bidirectional1 = nn.GRU(
+            input_size=64,
+            hidden_size=128,
+            batch_first=True,
+            bidirectional=True,
+            dropout=0.2,
+        )
+        self.maxpool1d = nn.MaxPool1d(
+            kernel_size=5,
+        )
+        self.output_layer = nn.LazyLinear(N_CLASS)
+        
+    def forward(self, x):
+        x = self.conv2d_block1(x)
+        x = self.conv2d_block2(x)
+        x = self.conv2d_block3(x)
+        x = x.permute((0,2,3,1)) # [batch, channel, n_frames, n_mel] -> [batch, n_frames, n_mel * channel]
+        x = self.flatten_layer(x)
+        x, h_n = self.gru1(x)
+        x, h_n = self.gru_bidirectional1(x)
+        x = x.permute(0,2,1) # perfrom maxpool1d on n_frames dimension
+        x = self.maxpool1d(x)
+        x = x.permute(0,2,1)
+        x = self.output_layer(x)
+        return x
+        
+
+class MPT2023_3(nn.Module):
+    def __init__(self):
+        """
+        class_weights: Weight tensor for each class size: (n_classes)
+        """
+        super(MPT2023_3, self).__init__()
+        self.conv2d_block1 = create_conv2d_block(
+            conv2d_input=(1,64,(1,5)),
+            padding='same',
+            maxpool_kernel_size=None,
+        )
+        
+        self.conv2d_block2 = create_conv2d_block(
+            conv2d_input=(64,64,(3,5)),
+            padding='same',
+            maxpool_kernel_size=None,
+        )
+
+        self.conv2d_block3 = create_conv2d_block(
+            conv2d_input=(64,64,(5,12)),
+            padding='same',
+            maxpool_kernel_size=(1,5),
+        )
+
+        self.conv2d_block4 = create_conv2d_block(
+            conv2d_input=(64,32,(3,3)),
+            padding='same',
+            maxpool_kernel_size=(1,3),
+        )
+
+        self.flatten_layer = nn.Flatten(start_dim=2)
+
+        self.gru1 = nn.GRU(
+            input_size=352,
+            hidden_size=64,
+            batch_first=True,
+            bidirectional=False,
+            dropout=0.2,
+        )
+
+        self.gru_bidirectional1 = nn.GRU(
+            input_size=64,
+            hidden_size=128,
+            batch_first=True,
+            bidirectional=True,
+            dropout=0.2,
+        )
+        self.maxpool1d = nn.MaxPool1d(
+            kernel_size=5,
+        )
+        self.output_layer = nn.LazyLinear(N_CLASS)
+        
+    def forward(self, x):
+        x = self.conv2d_block1(x)
+        x = self.conv2d_block2(x)
+        x = self.conv2d_block3(x)
+        x = self.conv2d_block4(x)
+        x = x.permute((0,2,3,1)) # [batch, channel, n_frames, n_mel] -> [batch, n_frames, n_mel * channel]
+        x = self.flatten_layer(x)
+        x, h_n = self.gru1(x)
+        x, h_n = self.gru_bidirectional1(x)
+        x = x.permute(0,2,1) # perfrom maxpool1d on n_frames dimension
+        x = self.maxpool1d(x)
+        x = x.permute(0,2,1)
+        x = self.output_layer(x)
+        return x
+        
+
+
 
 def create_conv2d_block(
         conv2d_input: Tuple[int, int,Union[Tuple[int,int], int]],

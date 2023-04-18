@@ -134,3 +134,4 @@ dmypy.json
 # Custom folders
 notebooks/pytorch_tutorial/*
 content/
+datasets/

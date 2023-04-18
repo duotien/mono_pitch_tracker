@@ -2,7 +2,7 @@ import os
 import sys
 
 from pitch_tracker.classifier import MelodyExtractor
-from pitch_tracker import THESIS_2023_MODEL_PATH
+from pitch_tracker import THESIS_2023_MODEL_3_PATH
 
 SRC_PATH = os.path.join(os.path.dirname(__file__))
 MEDLEYDB_PATH = os.path.join(SRC_PATH, 'medleydb')
@@ -17,7 +17,7 @@ def main():
     parser.add_argument('-o', '--out_midi_dir', type=str, default='./', help='Output directory for MIDI files', metavar='')
     parser.add_argument('-b', '--voicing_bias', type=float, default=0.0, help='Voicing bias for melody extraction', metavar='')
     parser.add_argument('-d', '--device', type=str, default='cpu', help='Device to run model on', metavar='')
-    parser.add_argument('-m', '--model_path', type=str, default=THESIS_2023_MODEL_PATH, help='Path to model', metavar='')
+    parser.add_argument('-m', '--model_path', type=str, default=THESIS_2023_MODEL_3_PATH, help='Path to model', metavar='')
 
     args = parser.parse_args()
 
